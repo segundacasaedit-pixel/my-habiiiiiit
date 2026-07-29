@@ -70,10 +70,10 @@
   // between iPhone and Mac. Leave apiKey as-is to keep using local-only storage
   // (each device keeps its own separate data, no sync).
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT_ID",
+    apiKey: "AIzaSyDm8nEtRnHX3SUobS2w_3k4PmMwFQLYAmI",
+    authDomain: "my-habiiiiiiiiiiiit.firebaseapp.com",
+    databaseURL: "https://my-habiiiiiiiiiiiit-default-rtdb.firebaseio.com",
+    projectId: "my-habiiiiiiiiiiiit",
   };
   const SYNC_PATH = "my-habiiiiiit-data";
 
