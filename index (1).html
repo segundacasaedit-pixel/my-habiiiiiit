@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>My habiiiiiit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- header -->
+  <header class="header">
+    <div class="header-left">
+      <span class="rec-dot"></span>
+      <div>
+        <div class="app-title">My habiiiiiit</div>
+        <div class="app-sub">習慣トラッカー + 目標設定</div>
+      </div>
+    </div>
+    <div class="timecode" id="timecode">--:--:--</div>
+  </header>
+
+  <!-- tabs -->
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="today">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      目標
+    </button>
+    <button class="tab-btn" data-tab="goal">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      明日の目標
+    </button>
+    <button class="tab-btn" data-tab="mandala">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      マンダラ
+    </button>
+    <button class="tab-btn" data-tab="history">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/><path d="M2 12h4"/></svg>
+      記録
+    </button>
+  </nav>
+
+  <!-- content -->
+  <main class="content" id="content">
+
+    <!-- 目標 tab -->
+    <section class="tab-panel" data-panel="today">
+      <div id="date-banner-container"></div>
+
+      <div class="section-label">習慣</div>
+      <div id="habit-list"></div>
+
+      <div class="add-row">
+        <input type="text" id="new-habit-input" placeholder="新しい習慣を追加（Shift+Enterで追加）" />
+        <button class="add-btn" id="add-habit-btn">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+
+      <div class="section-label" id="today-goal-label" style="margin-top:22px;">今日の目標</div>
+      <textarea id="today-goal-text" class="textarea" rows="2" placeholder="この日、達成したいことを書く"></textarea>
+      <div id="today-goal-actions" style="margin-top:10px; display:flex; flex-direction:column; gap:6px;"></div>
+      <div class="add-row">
+        <input type="text" id="new-today-action-input" placeholder="行動目標を追加（Shift+Enterで追加）" />
+        <button class="add-btn" id="add-today-action-btn">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+
+      <div class="section-label" id="reflection-label" style="margin-top:22px;">今日の反省</div>
+      <textarea id="reflection-text" class="textarea" rows="3" placeholder="今日うまくいったこと・改善したいことを書く"></textarea>
+    </section>
+
+    <!-- 明日の目標 tab -->
+    <section class="tab-panel hidden" data-panel="goal">
+      <div id="goal-hint-container"></div>
+      <div class="section-label" id="goal-tab-label">明日の目標</div>
+      <textarea id="goal-text" class="textarea" rows="2" placeholder="この日、達成したいことを書く"></textarea>
+      <div id="goal-actions" style="display:flex; flex-direction:column; gap:6px; margin-top:10px;"></div>
+      <div class="add-row">
+        <input type="text" id="new-goal-action-input" placeholder="行動目標を追加（Shift+Enterで追加）" />
+        <button class="add-btn" id="add-goal-action-btn">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+      <button class="preview-btn" id="preview-next-day-btn">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="preview-next-day-label"></span>
+      </button>
+    </section>
+
+    <!-- マンダラ tab -->
+    <section class="tab-panel hidden" data-panel="mandala">
+      <div class="section-label">マンダラチャート</div>
+      <div class="mandala-hint">
+        中心に一番達成したい目標を、周り8マスにそのためのサブ目標を書きます。さらに各サブ目標を中心にした8マスに、具体的な行動目標を書き込みます。マスをタップして下の欄に入力してください。
+      </div>
+      <div class="m-grid" id="mandala-grid"></div>
+      <div class="m-editor">
+        <div class="m-editor-label" id="m-editor-label">中心目標</div>
+        <textarea id="m-editor-text" class="textarea" rows="2" placeholder="内容を入力"></textarea>
+      </div>
+    </section>
+
+    <!-- 記録 tab -->
+    <section class="tab-panel hidden" data-panel="history">
+      <div class="mode-toggle">
+        <button class="mode-toggle-btn active" data-mode="upcoming">予定（今日から先）</button>
+        <button class="mode-toggle-btn" data-mode="past">過去の記録</button>
+      </div>
+      <div class="section-label" id="history-label"></div>
+      <div id="history-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+      <button class="load-more-btn" id="load-more-btn"></button>
+      <div class="legend">
+        <svg class="icon" viewBox="0 0 24 24" style="color:#3FC1AE"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        目標設定あり
+        &nbsp;&nbsp;
+        <svg class="icon" viewBox="0 0 24 24" style="color:#2C3358"><circle cx="12" cy="12" r="10"/></svg>
+        目標未設定
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script src="app.js?v=2"></script>
+</body>
+</html>
