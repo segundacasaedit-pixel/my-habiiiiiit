@@ -71,9 +71,9 @@
   // (each device keeps its own separate data, no sync).
   const firebaseConfig = {
     apiKey: "AIzaSyDm8nEtRnHX3SUobS2w_3k4PmMwFQLYAmI",
-    authDomain: "my-habiiiiiiiiiiiit.firebaseapp.com",
-    databaseURL: "https://my-habiiiiiiiiiiiit-default-rtdb.firebaseio.com",
-    projectId: "my-habiiiiiiiiiiiit",
+    authDomain: "my-habiiiiiiiiiit.firebaseapp.com",
+    databaseURL: "https://my-habiiiiiiiiiit-default-rtdb.firebaseio.com",
+    projectId: "my-habiiiiiiiiiit",
   };
   const SYNC_PATH = "my-habiiiiiit-data";
 
