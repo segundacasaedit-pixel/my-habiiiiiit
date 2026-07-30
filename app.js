@@ -81,8 +81,10 @@
   let dbRef = null;
   let syncTimer = null;
   let applyingRemoteUpdate = false;
+  let localEditCooldownUntil = 0;
 
   function pushToCloud() {
+    localEditCooldownUntil = Date.now() + 2000; // ignore incoming echoes for 2s after a local edit
     if (!syncEnabled || applyingRemoteUpdate) return;
     if (syncTimer) clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
@@ -98,6 +100,9 @@
       syncEnabled = true;
       let firstLoad = true;
       dbRef.on("value", (snapshot) => {
+        // a local edit is still in flight (or just landed) — don't let this snapshot
+        // (which may be stale relative to what the user just typed) stomp on it
+        if (!firstLoad && Date.now() < localEditCooldownUntil) return;
         const remote = snapshot.val();
         applyingRemoteUpdate = true;
         if (remote) {
