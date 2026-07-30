@@ -141,7 +141,8 @@
 
   // ---------- goal helpers (works for any date key) ----------
   function getGoalFor(dateKey) {
-    return state.goals[dateKey] || { goal: "", actions: [] };
+    const g = state.goals[dateKey];
+    return { goal: (g && g.goal) || "", actions: (g && g.actions) || [] };
   }
   function setGoalTextFor(dateKey, text) {
     const current = getGoalFor(dateKey);
