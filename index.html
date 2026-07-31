@@ -109,14 +109,23 @@
 
     <!-- 記録 tab -->
     <section class="tab-panel hidden" data-panel="history">
-      <div class="mode-toggle">
-        <button class="mode-toggle-btn active" data-mode="upcoming">予定（今日から先）</button>
-        <button class="mode-toggle-btn" data-mode="past">過去の記録</button>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" id="cal-prev-btn" aria-label="前の月">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="cal-nav-label" id="cal-month-label"></div>
+        <button class="cal-nav-btn" id="cal-next-btn" aria-label="次の月">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
       </div>
-      <div class="section-label" id="history-label"></div>
-      <div id="history-list" style="display:flex; flex-direction:column; gap:10px;"></div>
-      <button class="load-more-btn" id="load-more-btn"></button>
-      <div class="legend">
+      <button class="cal-today-btn" id="cal-today-btn">今月に戻る</button>
+
+      <div class="cal-weekdays">
+        <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+
+      <div class="legend" style="margin-top:14px;">
         <svg class="icon" viewBox="0 0 24 24" style="color:#3FC1AE"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
         目標設定あり
         &nbsp;&nbsp;
@@ -130,6 +139,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

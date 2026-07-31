@@ -131,11 +131,10 @@
   let currentTab = "today";
   let viewDate = todayStr();
   let lastToday = todayStr();
-  let historyMode = "upcoming";
-  let historyDaysUpcoming = 14;
-  let historyDaysPast = 14;
   let selectedCell = { type: "main" };
-  const MAX_HISTORY_DAYS = 180;
+  const now0 = new Date();
+  let calYear = now0.getFullYear();
+  let calMonth = now0.getMonth(); // 0-indexed
 
   const ORDER8 = [0, 1, 2, 3, 5, 6, 7, 8];
 
@@ -235,7 +234,6 @@
   }
   function setTab(tab) {
     currentTab = tab;
-    if (tab === "today") viewDate = todayStr();
     document.querySelectorAll(".tab-btn").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.tab === tab);
     });
@@ -454,54 +452,54 @@
     });
   }
 
-  // ---------- render: 記録 tab ----------
+  // ---------- render: 記録 tab (calendar) ----------
+  function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+
   function renderHistory() {
     const today = todayStr();
-    const days = historyMode === "upcoming" ? historyDaysUpcoming : historyDaysPast;
-    const list = historyMode === "upcoming"
-      ? Array.from({ length: days }, (_, i) => addDays(today, i))
-      : Array.from({ length: days }, (_, i) => addDays(today, -1 - i));
+    document.getElementById("cal-month-label").textContent = `${calYear}年${calMonth + 1}月`;
 
-    document.getElementById("history-label").textContent = historyMode === "upcoming"
-      ? "予定（今日から2週間先まで・下にスクロールでさらに先を表示）"
-      : "過去の記録（下にスクロールでさらにさかのぼる）";
+    const firstWeekday = new Date(calYear, calMonth, 1).getDay(); // 0 = Sun
+    const totalDays = daysInMonth(calYear, calMonth);
+    const prevMonthDays = daysInMonth(calYear, calMonth === 0 ? 11 : calMonth - 1);
 
-    const listEl = document.getElementById("history-list");
-    listEl.innerHTML = list.map((dateKey) => {
-      const rate = rateFor(dateKey);
+    const cells = [];
+    for (let i = firstWeekday - 1; i >= 0; i--) {
+      cells.push({ day: prevMonthDays - i, outside: true });
+    }
+    for (let d = 1; d <= totalDays; d++) {
+      cells.push({ day: d, outside: false });
+    }
+    let nextDay = 1;
+    while (cells.length % 7 !== 0) {
+      cells.push({ day: nextDay, outside: true });
+      nextDay++;
+    }
+
+    const gridEl = document.getElementById("cal-grid");
+    gridEl.innerHTML = cells.map((c) => {
+      if (c.outside) {
+        return `<div class="cal-cell outside"><span class="cal-daynum">${c.day}</span></div>`;
+      }
+      const dateKey = `${calYear}-${pad(calMonth + 1)}-${pad(c.day)}`;
       const isToday = dateKey === today;
+      const rate = rateFor(dateKey);
+      const hasItems = hasTrackableItemsFor(dateKey);
       const dayGoal = state.goals[dateKey];
-      const pct = hasTrackableItemsFor(dateKey) ? `${Math.round(rate * 100)}%` : "-";
-      const barColor = rate === 1 ? "var(--teal)" : "var(--amber)";
-      const goalIcon = (dayGoal && dayGoal.goal) ? goalSetIconSvg() : goalUnsetIconSvg();
+      const dotColor = (dayGoal && dayGoal.goal) ? "var(--teal)" : "transparent";
+      const pctText = hasItems ? `${Math.round(rate * 100)}%` : "";
+      const pctColor = rate === 1 ? "var(--teal)" : "var(--amber)";
       return `
-        <button class="history-row" data-goto-date="${dateKey}">
-          <div class="history-date">
-            <div class="d" style="color:${isToday ? "var(--amber)" : "var(--text)"}">${dispDate(dateKey)}</div>
-            <div class="w">${weekdayJP(dateKey)}</div>
-          </div>
-          <div class="meter-track"><div class="meter-fill" style="width:${Math.round(rate * 100)}%; background:${barColor};"></div></div>
-          <div class="meter-pct">${pct}</div>
-          ${goalIcon}
+        <button class="cal-cell ${isToday ? "today" : ""}" data-goto-date="${dateKey}">
+          <span class="cal-dot" style="background:${dotColor}"></span>
+          <span class="cal-daynum">${c.day}</span>
+          <span class="cal-pct" style="color:${hasItems ? pctColor : "var(--text-dim)"}">${pctText}</span>
         </button>`;
     }).join("");
 
     document.querySelectorAll("[data-goto-date]").forEach((btn) => {
       btn.onclick = () => goToDate(btn.dataset.gotoDate);
     });
-
-    const loadMoreBtn = document.getElementById("load-more-btn");
-    if (days < MAX_HISTORY_DAYS) {
-      loadMoreBtn.style.display = "block";
-      loadMoreBtn.textContent = historyMode === "upcoming" ? "さらに先の14日分を読み込む" : "さらに過去14日分を読み込む";
-      loadMoreBtn.onclick = () => {
-        if (historyMode === "upcoming") historyDaysUpcoming = Math.min(historyDaysUpcoming + 14, MAX_HISTORY_DAYS);
-        else historyDaysPast = Math.min(historyDaysPast + 14, MAX_HISTORY_DAYS);
-        renderHistory();
-      };
-    } else {
-      loadMoreBtn.style.display = "none";
-    }
   }
 
   // ---------- icons (inline svg strings, stroke uses currentColor) ----------
@@ -548,15 +546,27 @@
   // ---------- static listeners (attached once) ----------
   function attachStaticListeners() {
     document.querySelectorAll(".tab-btn").forEach((btn) => {
-      btn.addEventListener("click", () => setTab(btn.dataset.tab));
+      btn.addEventListener("click", () => {
+        if (btn.dataset.tab === "today") viewDate = todayStr();
+        setTab(btn.dataset.tab);
+      });
     });
 
-    document.querySelectorAll(".mode-toggle-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        historyMode = btn.dataset.mode;
-        document.querySelectorAll(".mode-toggle-btn").forEach((b) => b.classList.toggle("active", b === btn));
-        renderHistory();
-      });
+    document.getElementById("cal-prev-btn").addEventListener("click", () => {
+      calMonth -= 1;
+      if (calMonth < 0) { calMonth = 11; calYear -= 1; }
+      renderHistory();
+    });
+    document.getElementById("cal-next-btn").addEventListener("click", () => {
+      calMonth += 1;
+      if (calMonth > 11) { calMonth = 0; calYear += 1; }
+      renderHistory();
+    });
+    document.getElementById("cal-today-btn").addEventListener("click", () => {
+      const n = new Date();
+      calYear = n.getFullYear();
+      calMonth = n.getMonth();
+      renderHistory();
     });
 
     // 目標 tab inputs
