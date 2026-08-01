@@ -132,6 +132,7 @@
   let viewDate = todayStr();
   let lastToday = todayStr();
   let selectedCell = { type: "main" };
+  let editingHabitId = null;
   const now0 = new Date();
   let calYear = now0.getFullYear();
   let calMonth = now0.getMonth(); // 0-indexed
@@ -178,6 +179,24 @@
   }
   function removeHabit(id) {
     state.habits = state.habits.filter((h) => h.id !== id);
+    saveState();
+  }
+  function moveHabit(id, direction) {
+    const idx = state.habits.findIndex((h) => h.id === id);
+    if (idx === -1) return;
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= state.habits.length) return;
+    const arr = [...state.habits];
+    const tmp = arr[idx];
+    arr[idx] = arr[newIdx];
+    arr[newIdx] = tmp;
+    state.habits = arr;
+    saveState();
+  }
+  function renameHabit(id, name) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    state.habits = state.habits.map((h) => (h.id === id ? { ...h, name: trimmed } : h));
     saveState();
   }
   function toggleHabit(id, dateKey) {
@@ -273,15 +292,25 @@
     if (state.habits.length === 0) {
       listEl.innerHTML = `<div class="empty-state">まだ習慣が登録されていません。下から追加してください。</div>`;
     } else {
-      listEl.innerHTML = state.habits.map((h) => {
+      listEl.innerHTML = state.habits.map((h, idx) => {
         const done = (state.completions[viewDate] || []).includes(h.id);
         const streak = streakFor(h.id);
+        const isFirst = idx === 0;
+        const isLast = idx === state.habits.length - 1;
+        const isEditing = editingHabitId === h.id;
+        const nameHtml = isEditing
+          ? `<input type="text" class="habit-name-input" data-habit-edit-input="${h.id}" value="${escapeHtml(h.name)}" />`
+          : `<span class="habit-name ${done ? "done-text" : ""}" data-habit-name="${h.id}">${escapeHtml(h.name)}</span>`;
         return `
           <div class="habit-row ${done ? "done" : ""}">
+            <div class="reorder-col">
+              <button class="reorder-btn" data-move-up="${h.id}" ${isFirst ? "disabled" : ""}>${chevronUpSvg()}</button>
+              <button class="reorder-btn" data-move-down="${h.id}" ${isLast ? "disabled" : ""}>${chevronDownSvg()}</button>
+            </div>
             <button class="check-btn ${done ? "checked" : ""}" data-habit-toggle="${h.id}">
               ${done ? checkIconSvg() : ""}
             </button>
-            <span class="habit-name ${done ? "done-text" : ""}">${escapeHtml(h.name)}</span>
+            ${nameHtml}
             ${streak > 0 && viewDate === today ? `<span class="streak-badge">${flameIconSvg()} ${streak}</span>` : ""}
             <button class="icon-delete" data-habit-remove="${h.id}">${trashIconSvg()}</button>
           </div>`;
@@ -321,6 +350,29 @@
     });
     document.querySelectorAll("[data-habit-remove]").forEach((btn) => {
       btn.onclick = () => { removeHabit(btn.dataset.habitRemove); renderToday(); };
+    });
+    document.querySelectorAll("[data-move-up]").forEach((btn) => {
+      btn.onclick = () => { moveHabit(btn.dataset.moveUp, -1); renderToday(); };
+    });
+    document.querySelectorAll("[data-move-down]").forEach((btn) => {
+      btn.onclick = () => { moveHabit(btn.dataset.moveDown, 1); renderToday(); };
+    });
+    document.querySelectorAll("[data-habit-name]").forEach((span) => {
+      span.onclick = () => { editingHabitId = span.dataset.habitName; renderToday(); };
+    });
+    document.querySelectorAll("[data-habit-edit-input]").forEach((input) => {
+      input.focus();
+      input.select();
+      const commit = () => {
+        renameHabit(input.dataset.habitEditInput, input.value);
+        editingHabitId = null;
+        renderToday();
+      };
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); commit(); }
+        if (e.key === "Escape") { editingHabitId = null; renderToday(); }
+      });
     });
     document.querySelectorAll("[data-today-action-toggle]").forEach((btn) => {
       btn.onclick = () => { toggleActionFor(viewDate, btn.dataset.todayActionToggle); renderToday(); };
@@ -503,6 +555,12 @@
   }
 
   // ---------- icons (inline svg strings, stroke uses currentColor) ----------
+  function chevronUpSvg() {
+    return `<svg class="icon" viewBox="0 0 24 24" style="width:11px;height:11px"><polyline points="18 15 12 9 6 15"/></svg>`;
+  }
+  function chevronDownSvg() {
+    return `<svg class="icon" viewBox="0 0 24 24" style="width:11px;height:11px"><polyline points="6 9 12 15 18 9"/></svg>`;
+  }
   function checkIconSvg() {
     return `<svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke-width:3"><polyline points="20 6 9 17 4 12"/></svg>`;
   }
