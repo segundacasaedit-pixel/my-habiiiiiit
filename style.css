@@ -82,7 +82,15 @@ input, textarea, button {
   font-size: 15px;
   letter-spacing: 0.03em;
 }
-.app-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.app-motto {
+  font-family: 'Shippori Mincho B1', serif;
+  font-weight: 800;
+  font-size: 13.5px;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+  margin-top: 3px;
+}
 .timecode {
   font-family: var(--font-mono);
   font-size: 11px;
