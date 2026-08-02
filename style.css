@@ -286,8 +286,10 @@ input, textarea, button {
   color: var(--text);
   font-size: 13.5px;
   outline: none;
-  resize: vertical;
+  resize: none;
+  overflow-y: hidden;
   font-family: var(--font-body);
+  box-sizing: border-box;
 }
 
 .action-row {

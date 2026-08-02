@@ -262,6 +262,12 @@
     renderActiveTab();
   }
 
+  function autoGrow(el) {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }
+
   function escapeHtml(str) {
     return String(str)
       .replace(/&/g, "&amp;")
@@ -322,6 +328,7 @@
     document.getElementById("today-goal-label").textContent = viewDate === today ? "今日の目標" : `${dispDate(viewDate)}の目標`;
     const goalTextEl = document.getElementById("today-goal-text");
     goalTextEl.value = goalData.goal;
+    autoGrow(goalTextEl);
 
     const actionsEl = document.getElementById("today-goal-actions");
     if (goalData.actions.length === 0) {
@@ -339,7 +346,9 @@
 
     // reflection
     document.getElementById("reflection-label").textContent = viewDate === today ? "今日の反省" : `${dispDate(viewDate)}の反省`;
-    document.getElementById("reflection-text").value = getReflection(viewDate);
+    const reflectionEl = document.getElementById("reflection-text");
+    reflectionEl.value = getReflection(viewDate);
+    autoGrow(reflectionEl);
 
     attachTodayListeners();
   }
@@ -397,7 +406,9 @@
     document.getElementById("goal-tab-label").textContent = `${dispDate(nextDate)}（${weekdayJP(nextDate)}）の目標`;
 
     const goalData = getGoalFor(nextDate);
-    document.getElementById("goal-text").value = goalData.goal;
+    const goalTextEl2 = document.getElementById("goal-text");
+    goalTextEl2.value = goalData.goal;
+    autoGrow(goalTextEl2);
 
     const actionsEl = document.getElementById("goal-actions");
     if (goalData.actions.length === 0) {
@@ -494,7 +505,9 @@
     document.getElementById("mandala-grid").innerHTML = html;
 
     document.getElementById("m-editor-label").textContent = cellLabel(selectedCell);
-    document.getElementById("m-editor-text").value = getCellValue(selectedCell);
+    const mEditorText = document.getElementById("m-editor-text");
+    mEditorText.value = getCellValue(selectedCell);
+    autoGrow(mEditorText);
 
     document.querySelectorAll("[data-cell-key]").forEach((btn) => {
       btn.onclick = () => {
@@ -645,6 +658,7 @@
 
     document.getElementById("today-goal-text").addEventListener("input", (e) => {
       setGoalTextFor(viewDate, e.target.value);
+      autoGrow(e.target);
     });
     const newTodayActionInput = document.getElementById("new-today-action-input");
     document.getElementById("add-today-action-btn").addEventListener("click", () => {
@@ -663,11 +677,13 @@
 
     document.getElementById("reflection-text").addEventListener("input", (e) => {
       setReflection(viewDate, e.target.value);
+      autoGrow(e.target);
     });
 
     // 明日の目標 tab inputs
     document.getElementById("goal-text").addEventListener("input", (e) => {
       setGoalTextFor(addDays(viewDate, 1), e.target.value);
+      autoGrow(e.target);
     });
     const newGoalActionInput = document.getElementById("new-goal-action-input");
     document.getElementById("add-goal-action-btn").addEventListener("click", () => {
@@ -690,6 +706,7 @@
     // マンダラ tab editor
     document.getElementById("m-editor-text").addEventListener("input", (e) => {
       setCellValue(selectedCell, e.target.value);
+      autoGrow(e.target);
       // update just the grid cell text + preview title without full re-render (keeps focus in textarea)
       const key = cellKey(selectedCell);
       const btn = document.querySelector(`[data-cell-key="${key}"]`);
