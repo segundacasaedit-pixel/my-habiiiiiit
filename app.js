@@ -96,31 +96,38 @@
     if (typeof firebase === "undefined" || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") return;
     try {
       firebase.initializeApp(firebaseConfig);
-      dbRef = firebase.database().ref(SYNC_PATH);
-      syncEnabled = true;
-      let firstLoad = true;
-      dbRef.on("value", (snapshot) => {
-        // a local edit is still in flight (or just landed) — don't let this snapshot
-        // (which may be stale relative to what the user just typed) stomp on it
-        if (!firstLoad && Date.now() < localEditCooldownUntil) return;
-        const remote = snapshot.val();
-        applyingRemoteUpdate = true;
-        if (remote) {
-          state = {
-            habits: remote.habits || [],
-            completions: remote.completions || {},
-            goals: remote.goals || {},
-            reflections: remote.reflections || {},
-            mandala: { ...emptyMandala(), ...(remote.mandala || {}) },
-          };
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        } else if (firstLoad) {
-          // nothing in the cloud yet — seed it with whatever's stored on this device
-          dbRef.set(state);
-        }
-        applyingRemoteUpdate = false;
-        firstLoad = false;
-        renderActiveTab();
+      firebase.auth().signInAnonymously().catch((e) => {
+        console.error("Firebase anonymous sign-in failed", e);
+      });
+      firebase.auth().onAuthStateChanged((user) => {
+        if (!user) return; // not signed in yet — wait for the next call
+        if (syncEnabled) return; // already wired up, don't attach a second listener
+        dbRef = firebase.database().ref(SYNC_PATH);
+        syncEnabled = true;
+        let firstLoad = true;
+        dbRef.on("value", (snapshot) => {
+          // a local edit is still in flight (or just landed) — don't let this snapshot
+          // (which may be stale relative to what the user just typed) stomp on it
+          if (!firstLoad && Date.now() < localEditCooldownUntil) return;
+          const remote = snapshot.val();
+          applyingRemoteUpdate = true;
+          if (remote) {
+            state = {
+              habits: remote.habits || [],
+              completions: remote.completions || {},
+              goals: remote.goals || {},
+              reflections: remote.reflections || {},
+              mandala: { ...emptyMandala(), ...(remote.mandala || {}) },
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          } else if (firstLoad) {
+            // nothing in the cloud yet — seed it with whatever's stored on this device
+            dbRef.set(state);
+          }
+          applyingRemoteUpdate = false;
+          firstLoad = false;
+          renderActiveTab();
+        });
       });
     } catch (e) {
       console.error("Firebase sync init failed", e);
