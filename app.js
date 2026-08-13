@@ -612,7 +612,7 @@
   function updateClock() {
     const now = new Date();
     document.getElementById("timecode").textContent =
-      `${todayStr()}  ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      `${todayStr()}  ${pad(now.getHours())}:${pad(now.getMinutes())}`;
     const nowStr = todayStr();
     if (nowStr !== lastToday) {
       if (viewDate === lastToday) viewDate = nowStr;
