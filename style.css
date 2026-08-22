@@ -487,8 +487,8 @@ input, textarea, button {
 .cal-cell.today .cal-daynum { color: var(--amber); font-weight: 600; }
 .cal-cell .cal-pct {
   font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--text-muted);
 }
 .cal-cell .cal-dot {
