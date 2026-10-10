@@ -66,7 +66,8 @@ input, textarea, button {
   border-bottom: 1px solid var(--border);
   background: var(--bg-header);
 }
-.header-left { display: flex; align-items: center; gap: 10px; }
+.header-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.header .timecode { margin-left: 12px; align-self: flex-start; }
 .rec-dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--amber); flex-shrink: 0;
@@ -85,11 +86,12 @@ input, textarea, button {
 .app-motto {
   font-family: 'Shippori Mincho B1', serif;
   font-weight: 800;
-  font-size: 13.5px;
-  line-height: 1.35;
-  letter-spacing: 0.04em;
-  color: var(--amber);
-  margin-top: 3px;
+  font-size: 17px;
+  line-height: 1.4;
+  letter-spacing: 0.03em;
+  color: #22D3EE;
+  margin-top: 4px;
+  text-wrap: balance;
 }
 .timecode {
   font-family: var(--font-mono);
