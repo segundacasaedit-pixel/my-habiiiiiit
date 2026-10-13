@@ -96,11 +96,29 @@
     if (typeof firebase === "undefined" || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") return;
     try {
       firebase.initializeApp(firebaseConfig);
-      firebase.auth().signInAnonymously().catch((e) => {
-        console.error("Firebase anonymous sign-in failed", e);
-      });
+            const loginButton = document.createElement("button");
+      loginButton.textContent = "Googleでログイン";
+      loginButton.style.cssText =
+        "display:block;margin:12px auto;padding:12px 20px;cursor:pointer;";
+      document.querySelector(".header").after(loginButton);
+
+      loginButton.onclick = async () => {
+        loginButton.disabled = true;
+        try {
+          const provider = new firebase.auth.GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: "select_account" });
+          await firebase.auth().signInWithPopup(provider);
+        } catch (e) {
+          console.error("Google sign-in failed", e);
+          alert("ログインできませんでした: " + e.code);
+        } finally {
+          loginButton.disabled = false;
+        }
+      };
       firebase.auth().onAuthStateChanged((user) => {
-        if (!user) return; // not signed in yet — wait for the next call
+                const needsLogin = !user || user.isAnonymous;
+        loginButton.style.display = needsLogin ? "block" : "none";
+        if (needsLogin) return;
         if (syncEnabled) return; // already wired up, don't attach a second listener
         dbRef = firebase.database().ref(SYNC_PATH);
         syncEnabled = true;
