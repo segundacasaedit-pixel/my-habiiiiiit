@@ -331,7 +331,7 @@
         const isEditing = editingHabitId === h.id;
         const nameHtml = isEditing
           ? `<input type="text" class="habit-name-input" data-habit-edit-input="${h.id}" value="${escapeHtml(h.name)}" />`
-          : `<span class="habit-name ${done ? "done-text" : ""}" data-habit-name="${h.id}">${escapeHtml(h.name)}</span>`;
+          : `<span class="habit-name ${done ? "done-text" : ""}">${escapeHtml(h.name)}</span>`;
         return `
           <div class="habit-row ${done ? "done" : ""}">
             <div class="reorder-col">
@@ -343,6 +343,7 @@
             </button>
             ${nameHtml}
             ${streak > 0 && viewDate === today ? `<span class="streak-badge">${flameIconSvg()} ${streak}</span>` : ""}
+            ${isEditing ? "" : `<button class="icon-edit" data-habit-edit="${h.id}" aria-label="名前を編集">${pencilIconSvg()}</button>`}
             <button class="icon-delete" data-habit-remove="${h.id}">${trashIconSvg()}</button>
           </div>`;
       }).join("");
@@ -391,8 +392,8 @@
     document.querySelectorAll("[data-move-down]").forEach((btn) => {
       btn.onclick = () => { moveHabit(btn.dataset.moveDown, 1); renderToday(); };
     });
-    document.querySelectorAll("[data-habit-name]").forEach((span) => {
-      span.onclick = () => { editingHabitId = span.dataset.habitName; renderToday(); };
+    document.querySelectorAll("[data-habit-edit]").forEach((btn) => {
+      btn.onclick = () => { editingHabitId = btn.dataset.habitEdit; renderToday(); };
     });
     document.querySelectorAll("[data-habit-edit-input]").forEach((input) => {
       input.focus();
@@ -593,6 +594,9 @@
   }
 
   // ---------- icons (inline svg strings, stroke uses currentColor) ----------
+  function pencilIconSvg() {
+    return `<svg class="icon" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
+  }
   function chevronUpSvg() {
     return `<svg class="icon" viewBox="0 0 24 24" style="width:11px;height:11px"><polyline points="18 15 12 9 6 15"/></svg>`;
   }

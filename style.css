@@ -182,8 +182,7 @@ input, textarea, button {
   margin-bottom: 8px;
 }
 .habit-row.done { background: #10132A; border-color: #1C2242; }
-.habit-name { flex: 1; font-size: 13.5px; cursor: text; border-radius: 4px; padding: 2px 4px; margin: -2px -4px; user-select: none; }
-.habit-name:hover { background: #ffffff08; }
+.habit-name { flex: 1; font-size: 13.5px; user-select: none; }
 .habit-name.done-text { color: var(--text-muted); }
 .habit-name-input {
   flex: 1;
@@ -261,6 +260,15 @@ input, textarea, button {
   display: flex;
   align-items: center;
 }
+.icon-edit {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+.icon-edit:hover { color: var(--amber); }
 
 .add-row { display: flex; gap: 8px; margin-top: 14px; }
 .add-row input {
