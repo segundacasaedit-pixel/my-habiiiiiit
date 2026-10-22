@@ -80,9 +80,13 @@
         <input type="text" id="study-name-input" list="study-label-options" placeholder="項目（例：英語、動画編集）" autocomplete="off" />
         <datalist id="study-label-options"></datalist>
         <div class="study-time-row">
-          <input type="time" id="study-start-input" aria-label="開始時刻" />
+          <div class="study-time-group">
+            <select id="study-start-h" aria-label="開始（時）"></select><span>:</span><select id="study-start-m" aria-label="開始（分）"></select>
+          </div>
           <span class="study-time-sep">〜</span>
-          <input type="time" id="study-end-input" aria-label="終了時刻" />
+          <div class="study-time-group">
+            <select id="study-end-h" aria-label="終了（時）"></select><span>:</span><select id="study-end-m" aria-label="終了（分）"></select>
+          </div>
           <button class="add-btn" id="add-study-btn" aria-label="学習時間を追加">
             <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
@@ -159,6 +163,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>

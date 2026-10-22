@@ -290,7 +290,7 @@
     renderActiveTab();
   }
 
-  // ---------- study time (24h clock chart) ----------
+  // ---------- study time (24h horizontal bar) ----------
   const STUDY_COLORS = ["#22D3EE", "#E8A33D", "#3FC1AE", "#A78BFA", "#F472B6", "#A3E635", "#FB923C", "#60A5FA"];
   function studyColor(label) {
     let h = 0;
@@ -329,28 +329,15 @@
     state.study[dateKey] = getStudy(dateKey).filter((it) => it.id !== id);
     saveState();
   }
-  function polarXY(cx, cy, r, deg) {
-    const rad = (deg * Math.PI) / 180;
-    return [cx + r * Math.sin(rad), cy - r * Math.cos(rad)];
-  }
-  function donutArcPath(cx, cy, ro, ri, a0, a1) {
-    if (a1 - a0 >= 359.99) a1 = a0 + 359.99;
-    const large = a1 - a0 > 180 ? 1 : 0;
-    const f = (p) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`;
-    return `M${f(polarXY(cx, cy, ro, a0))} A${ro} ${ro} 0 ${large} 1 ${f(polarXY(cx, cy, ro, a1))} L${f(polarXY(cx, cy, ri, a1))} A${ri} ${ri} 0 ${large} 0 ${f(polarXY(cx, cy, ri, a0))} Z`;
-  }
-
   function renderStudy() {
     const today = todayStr();
     const items = [...getStudy(viewDate)].sort((a, b) => (timeToMin(a.start) || 0) - (timeToMin(b.start) || 0));
     document.getElementById("study-section-label").textContent =
       viewDate === today ? "今日の学習時間" : `${dispDate(viewDate)}の学習時間`;
 
-    // 24h clock-style donut: 0:00 at the top, clockwise
-    const cx = 100, cy = 100, ro = 90, ri = 58;
-    let svg = `<svg viewBox="-18 -18 236 236" class="study-svg" role="img" aria-label="24時間の学習時間グラフ">`;
-    svg += `<circle class="study-track" cx="${cx}" cy="${cy}" r="${(ro + ri) / 2}" style="stroke-width:${ro - ri}"/>`;
+    // one horizontal bar = 24 hours (0:00 at the left edge)
     let total = 0;
+    let segs = "";
     items.forEach((it) => {
       const s = timeToMin(it.start);
       const e = timeToMin(it.end);
@@ -359,24 +346,20 @@
       total += dur;
       const color = studyColor(it.label);
       const ranges = e > s ? [[s, e]] : [[s, 1440]].concat(e > 0 ? [[0, e]] : []);
+      const tip = `${escapeHtml(it.label)} ${it.start}〜${it.end}（${fmtDuration(dur)}）`;
       ranges.forEach((r) => {
-        svg += `<path class="study-seg" d="${donutArcPath(cx, cy, ro, ri, r[0] * 0.25, r[1] * 0.25)}" fill="${color}"><title>${escapeHtml(it.label)} ${it.start}〜${it.end}（${fmtDuration(dur)}）</title></path>`;
+        const left = r[0] / 14.4;
+        const width = Math.max((r[1] - r[0]) / 14.4, 0.7);
+        segs += `<div class="study-bar-seg" style="left:${left.toFixed(3)}%;width:${width.toFixed(3)}%;background:${color}" title="${tip}"></div>`;
       });
     });
-    for (let h = 0; h < 24; h++) {
-      const major = h % 6 === 0;
-      const p0 = polarXY(cx, cy, ro + 1, h * 15);
-      const p1 = polarXY(cx, cy, ro + (major ? 6 : 3), h * 15);
-      svg += `<line class="study-tick" x1="${p0[0].toFixed(2)}" y1="${p0[1].toFixed(2)}" x2="${p1[0].toFixed(2)}" y2="${p1[1].toFixed(2)}"/>`;
-    }
-    [0, 6, 12, 18].forEach((h) => {
-      const p = polarXY(cx, cy, ro + 16, h * 15);
-      svg += `<text class="study-hour" x="${p[0].toFixed(2)}" y="${p[1].toFixed(2)}" dy="0.35em" text-anchor="middle">${h}</text>`;
-    });
-    svg += `<text class="study-center-label" x="100" y="92" text-anchor="middle">合計</text>`;
-    svg += `<text class="study-center-total" x="100" y="113" text-anchor="middle">${total ? fmtDuration(total) : "未記録"}</text>`;
-    svg += `</svg>`;
-    document.getElementById("study-chart").innerHTML = svg;
+    const axis = [0, 6, 12, 18, 24]
+      .map((h) => `<span class="study-axis-lbl${h === 0 ? " first" : h === 24 ? " last" : ""}" style="left:${(h / 24) * 100}%">${h}</span>`)
+      .join("");
+    document.getElementById("study-chart").innerHTML =
+      `<div class="study-total"><span>合計</span><b>${total ? fmtDuration(total) : "未記録"}</b></div>` +
+      `<div class="study-bar"><i class="study-bar-grid" style="left:25%"></i><i class="study-bar-grid" style="left:50%"></i><i class="study-bar-grid" style="left:75%"></i>${segs}</div>` +
+      `<div class="study-axis">${axis}</div>`;
 
     // per-label totals
     const byLabel = {};
@@ -392,7 +375,7 @@
     // session list
     const listEl = document.getElementById("study-list");
     if (items.length === 0) {
-      listEl.innerHTML = `<div class="empty-state">勉強した時間帯を追加すると、時計の文字盤に色が付きます。</div>`;
+      listEl.innerHTML = `<div class="empty-state">勉強した時間帯を追加すると、バーに色が付きます。</div>`;
     } else {
       listEl.innerHTML = items.map((it) => `
         <div class="study-row">
@@ -833,20 +816,28 @@
     });
 
     // 学習時間
+    const hourOpts = '<option value="">時</option>' +
+      Array.from({ length: 24 }, (_, i) => `<option value="${pad(i)}">${pad(i)}</option>`).join("");
+    const minOpts = Array.from({ length: 12 }, (_, i) => `<option value="${pad(i * 5)}">${pad(i * 5)}</option>`).join("");
+    ["study-start-h", "study-end-h"].forEach((id) => { document.getElementById(id).innerHTML = hourOpts; });
+    ["study-start-m", "study-end-m"].forEach((id) => { document.getElementById(id).innerHTML = minOpts; });
     const studyNameInput = document.getElementById("study-name-input");
-    const studyStartInput = document.getElementById("study-start-input");
-    const studyEndInput = document.getElementById("study-end-input");
     const studyMsg = document.getElementById("study-msg");
+    const readStudyTime = (prefix) => {
+      const h = document.getElementById(`study-${prefix}-h`).value;
+      const m = document.getElementById(`study-${prefix}-m`).value;
+      return h === "" ? "" : `${h}:${m}`;
+    };
     const submitStudy = () => {
-      const ok = addStudy(viewDate, studyNameInput.value, studyStartInput.value, studyEndInput.value);
+      const ok = addStudy(viewDate, studyNameInput.value, readStudyTime("start"), readStudyTime("end"));
       if (!ok) {
-        studyMsg.textContent = "開始と終了の時刻を入力してください（同じ時刻にはできません）";
+        studyMsg.textContent = "開始と終了の時刻を選んでください（同じ時刻にはできません）";
         return;
       }
       studyMsg.textContent = "";
       studyNameInput.value = "";
-      studyStartInput.value = "";
-      studyEndInput.value = "";
+      ["study-start-h", "study-end-h"].forEach((id) => { document.getElementById(id).value = ""; });
+      ["study-start-m", "study-end-m"].forEach((id) => { document.getElementById(id).value = "00"; });
       renderStudy();
     };
     document.getElementById("add-study-btn").addEventListener("click", submitStudy);

@@ -523,16 +523,25 @@ input, textarea, button {
 
 .plan-checkbox { width: 14px; height: 14px; accent-color: var(--teal); }
 
-/* study time (24h clock chart) */
-.study-chart-wrap { max-width: 270px; margin: 0 auto 10px; }
-.study-svg { width: 100%; height: auto; display: block; }
-.study-track { fill: none; stroke: var(--bg-panel); }
-.study-seg { stroke: var(--bg); stroke-width: 1; }
-.study-tick { stroke: var(--text-dim); stroke-width: 1; }
-.study-hour { fill: var(--text-muted); font-size: 11px; font-family: var(--font-mono); }
-.study-center-label { fill: var(--text-muted); font-size: 11px; font-family: var(--font-body); }
-.study-center-total { fill: var(--text); font-size: 15px; font-weight: 600; font-family: var(--font-body); }
-.study-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 10px; }
+/* study time (24h horizontal bar) */
+.study-chart-wrap { margin-bottom: 10px; }
+.study-total { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; font-size: 11px; color: var(--text-muted); }
+.study-total b { font-size: 15px; font-weight: 600; color: var(--text); }
+.study-bar {
+  position: relative; height: 26px;
+  background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: 7px; overflow: hidden;
+}
+.study-bar-grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-light); opacity: 0.7; }
+.study-bar-seg { position: absolute; top: 3px; bottom: 3px; border-radius: 4px; }
+.study-axis { position: relative; height: 16px; margin-top: 4px; }
+.study-axis-lbl {
+  position: absolute; transform: translateX(-50%);
+  font-size: 10px; font-family: var(--font-mono); color: var(--text-dim);
+}
+.study-axis-lbl.first { transform: none; }
+.study-axis-lbl.last { transform: translateX(-100%); }
+.study-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .study-chip {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--bg-panel); border: 1px solid var(--border);
@@ -549,13 +558,14 @@ input, textarea, button {
 .study-row-time { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
 .study-row-dur { font-family: var(--font-mono); font-size: 11.5px; color: var(--amber); min-width: 4.5em; text-align: right; white-space: nowrap; }
 .study-form { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
-.study-form input[type="text"], .study-form input[type="time"] {
+.study-form input[type="text"], .study-form select {
   background: var(--bg-panel); border: 1px solid var(--border-light); border-radius: 8px;
   padding: 10px 12px; color: var(--text); font-size: 13px; outline: none;
-  min-width: 0; min-height: 40px; font-family: var(--font-body);
+  min-width: 0; min-height: 40px; font-family: var(--font-body); color-scheme: dark;
 }
-.study-form input[type="time"] { flex: 1; color-scheme: dark; }
-.study-time-row { display: flex; align-items: center; gap: 8px; }
+.study-form select { flex: 1; padding: 8px 4px; }
+.study-time-row { display: flex; align-items: center; gap: 6px; }
+.study-time-group { display: flex; align-items: center; gap: 3px; flex: 1; min-width: 0; }
 .study-time-row .add-btn { height: 40px; }
 .study-time-sep { color: var(--text-muted); }
 .study-msg { font-size: 11px; color: var(--amber); min-height: 1em; margin-top: 6px; }
