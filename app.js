@@ -41,6 +41,7 @@
         completions: parsed.completions || {},
         goals: parsed.goals || {},
         reflections: parsed.reflections || {},
+        study: parsed.study || {},
         mandala: { ...emptyMandala(), ...(parsed.mandala || {}) },
       };
     } catch (e) {
@@ -49,6 +50,7 @@
         completions: {},
         goals: {},
         reflections: {},
+        study: {},
         mandala: emptyMandala(),
       };
     }
@@ -135,6 +137,7 @@
               completions: remote.completions || {},
               goals: remote.goals || {},
               reflections: remote.reflections || {},
+              study: remote.study || {},
               mandala: { ...emptyMandala(), ...(remote.mandala || {}) },
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -287,6 +290,130 @@
     renderActiveTab();
   }
 
+  // ---------- study time (24h clock chart) ----------
+  const STUDY_COLORS = ["#22D3EE", "#E8A33D", "#3FC1AE", "#A78BFA", "#F472B6", "#A3E635", "#FB923C", "#60A5FA"];
+  function studyColor(label) {
+    let h = 0;
+    for (let i = 0; i < label.length; i++) h = (h * 31 + label.charCodeAt(i)) >>> 0;
+    return STUDY_COLORS[h % STUDY_COLORS.length];
+  }
+  function timeToMin(t) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(t || "");
+    if (!m) return null;
+    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  }
+  function studyDuration(it) {
+    const s = timeToMin(it.start);
+    const e = timeToMin(it.end);
+    if (s === null || e === null || s === e) return 0;
+    return e > s ? e - s : e + 1440 - s; // end earlier than start = crosses midnight
+  }
+  function fmtDuration(min) {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    if (h === 0) return `${m}分`;
+    return m === 0 ? `${h}時間` : `${h}時間${m}分`;
+  }
+  function getStudy(dateKey) { return (state.study && state.study[dateKey]) || []; }
+  function addStudy(dateKey, label, start, end) {
+    const s = timeToMin(start);
+    const e = timeToMin(end);
+    if (s === null || e === null || s === e) return false;
+    if (!state.study) state.study = {};
+    state.study[dateKey] = [...getStudy(dateKey), { id: uid(), label: label.trim() || "勉強", start, end }];
+    saveState();
+    return true;
+  }
+  function removeStudy(dateKey, id) {
+    if (!state.study) state.study = {};
+    state.study[dateKey] = getStudy(dateKey).filter((it) => it.id !== id);
+    saveState();
+  }
+  function polarXY(cx, cy, r, deg) {
+    const rad = (deg * Math.PI) / 180;
+    return [cx + r * Math.sin(rad), cy - r * Math.cos(rad)];
+  }
+  function donutArcPath(cx, cy, ro, ri, a0, a1) {
+    if (a1 - a0 >= 359.99) a1 = a0 + 359.99;
+    const large = a1 - a0 > 180 ? 1 : 0;
+    const f = (p) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`;
+    return `M${f(polarXY(cx, cy, ro, a0))} A${ro} ${ro} 0 ${large} 1 ${f(polarXY(cx, cy, ro, a1))} L${f(polarXY(cx, cy, ri, a1))} A${ri} ${ri} 0 ${large} 0 ${f(polarXY(cx, cy, ri, a0))} Z`;
+  }
+
+  function renderStudy() {
+    const today = todayStr();
+    const items = [...getStudy(viewDate)].sort((a, b) => (timeToMin(a.start) || 0) - (timeToMin(b.start) || 0));
+    document.getElementById("study-section-label").textContent =
+      viewDate === today ? "今日の学習時間" : `${dispDate(viewDate)}の学習時間`;
+
+    // 24h clock-style donut: 0:00 at the top, clockwise
+    const cx = 100, cy = 100, ro = 90, ri = 58;
+    let svg = `<svg viewBox="-18 -18 236 236" class="study-svg" role="img" aria-label="24時間の学習時間グラフ">`;
+    svg += `<circle class="study-track" cx="${cx}" cy="${cy}" r="${(ro + ri) / 2}" style="stroke-width:${ro - ri}"/>`;
+    let total = 0;
+    items.forEach((it) => {
+      const s = timeToMin(it.start);
+      const e = timeToMin(it.end);
+      const dur = studyDuration(it);
+      if (!dur) return;
+      total += dur;
+      const color = studyColor(it.label);
+      const ranges = e > s ? [[s, e]] : [[s, 1440]].concat(e > 0 ? [[0, e]] : []);
+      ranges.forEach((r) => {
+        svg += `<path class="study-seg" d="${donutArcPath(cx, cy, ro, ri, r[0] * 0.25, r[1] * 0.25)}" fill="${color}"><title>${escapeHtml(it.label)} ${it.start}〜${it.end}（${fmtDuration(dur)}）</title></path>`;
+      });
+    });
+    for (let h = 0; h < 24; h++) {
+      const major = h % 6 === 0;
+      const p0 = polarXY(cx, cy, ro + 1, h * 15);
+      const p1 = polarXY(cx, cy, ro + (major ? 6 : 3), h * 15);
+      svg += `<line class="study-tick" x1="${p0[0].toFixed(2)}" y1="${p0[1].toFixed(2)}" x2="${p1[0].toFixed(2)}" y2="${p1[1].toFixed(2)}"/>`;
+    }
+    [0, 6, 12, 18].forEach((h) => {
+      const p = polarXY(cx, cy, ro + 16, h * 15);
+      svg += `<text class="study-hour" x="${p[0].toFixed(2)}" y="${p[1].toFixed(2)}" dy="0.35em" text-anchor="middle">${h}</text>`;
+    });
+    svg += `<text class="study-center-label" x="100" y="92" text-anchor="middle">合計</text>`;
+    svg += `<text class="study-center-total" x="100" y="113" text-anchor="middle">${total ? fmtDuration(total) : "未記録"}</text>`;
+    svg += `</svg>`;
+    document.getElementById("study-chart").innerHTML = svg;
+
+    // per-label totals
+    const byLabel = {};
+    items.forEach((it) => {
+      const d = studyDuration(it);
+      if (d) byLabel[it.label] = (byLabel[it.label] || 0) + d;
+    });
+    document.getElementById("study-chips").innerHTML = Object.keys(byLabel)
+      .sort((a, b) => byLabel[b] - byLabel[a])
+      .map((label) => `<span class="study-chip"><i style="background:${studyColor(label)}"></i>${escapeHtml(label)} <b>${fmtDuration(byLabel[label])}</b></span>`)
+      .join("");
+
+    // session list
+    const listEl = document.getElementById("study-list");
+    if (items.length === 0) {
+      listEl.innerHTML = `<div class="empty-state">勉強した時間帯を追加すると、時計の文字盤に色が付きます。</div>`;
+    } else {
+      listEl.innerHTML = items.map((it) => `
+        <div class="study-row">
+          <i class="study-dot" style="background:${studyColor(it.label)}"></i>
+          <span class="study-row-label">${escapeHtml(it.label)}</span>
+          <span class="study-row-time">${it.start}〜${it.end}</span>
+          <span class="study-row-dur">${fmtDuration(studyDuration(it))}</span>
+          <button class="icon-delete" data-study-remove="${it.id}" aria-label="削除">${xIconSvg()}</button>
+        </div>`).join("");
+    }
+    document.querySelectorAll("[data-study-remove]").forEach((btn) => {
+      btn.onclick = () => { removeStudy(viewDate, btn.dataset.studyRemove); renderStudy(); };
+    });
+
+    // suggestions: every label used on any day
+    const seen = {};
+    Object.keys(state.study || {}).forEach((d) => getStudy(d).forEach((it) => { seen[it.label] = true; }));
+    document.getElementById("study-label-options").innerHTML = Object.keys(seen)
+      .map((l) => `<option value="${escapeHtml(l)}"></option>`).join("");
+  }
+
   function autoGrow(el) {
     if (!el) return;
     el.style.height = "auto";
@@ -376,6 +503,7 @@
     reflectionEl.value = getReflection(viewDate);
     autoGrow(reflectionEl);
 
+    renderStudy();
     attachTodayListeners();
   }
 
@@ -701,6 +829,31 @@
         addActionFor(viewDate, newTodayActionInput.value);
         newTodayActionInput.value = "";
         renderToday();
+      }
+    });
+
+    // 学習時間
+    const studyNameInput = document.getElementById("study-name-input");
+    const studyStartInput = document.getElementById("study-start-input");
+    const studyEndInput = document.getElementById("study-end-input");
+    const studyMsg = document.getElementById("study-msg");
+    const submitStudy = () => {
+      const ok = addStudy(viewDate, studyNameInput.value, studyStartInput.value, studyEndInput.value);
+      if (!ok) {
+        studyMsg.textContent = "開始と終了の時刻を入力してください（同じ時刻にはできません）";
+        return;
+      }
+      studyMsg.textContent = "";
+      studyNameInput.value = "";
+      studyStartInput.value = "";
+      studyEndInput.value = "";
+      renderStudy();
+    };
+    document.getElementById("add-study-btn").addEventListener("click", submitStudy);
+    studyNameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.shiftKey) {
+        e.preventDefault();
+        submitStudy();
       }
     });
 

@@ -72,6 +72,25 @@
         </button>
       </div>
 
+      <div class="section-label" id="study-section-label" style="margin-top:22px;">今日の学習時間</div>
+      <div class="study-chart-wrap" id="study-chart"></div>
+      <div class="study-chips" id="study-chips"></div>
+      <div id="study-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+      <div class="study-form">
+        <input type="text" id="study-name-input" list="study-label-options" placeholder="項目（例：英語、動画編集）" autocomplete="off" />
+        <datalist id="study-label-options"></datalist>
+        <div class="study-time-row">
+          <input type="time" id="study-start-input" aria-label="開始時刻" />
+          <span class="study-time-sep">〜</span>
+          <input type="time" id="study-end-input" aria-label="終了時刻" />
+          <button class="add-btn" id="add-study-btn" aria-label="学習時間を追加">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="study-msg" id="study-msg"></div>
+      <div class="study-note">終了が開始より前の時刻なら、日をまたぐ学習として計算します。</div>
+
       <div class="section-label" id="reflection-label" style="margin-top:22px;">今日の反省</div>
       <textarea id="reflection-text" class="textarea" rows="3" placeholder="今日うまくいったこと・改善したいことを書く"></textarea>
     </section>
@@ -140,6 +159,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>
