@@ -570,3 +570,21 @@ input, textarea, button {
 .study-time-sep { color: var(--text-muted); }
 .study-msg { font-size: 11px; color: var(--amber); min-height: 1em; margin-top: 6px; }
 .study-note { font-size: 10.5px; color: var(--text-dim); margin-top: 4px; line-height: 1.5; }
+
+/* study item pull-down + manage buttons */
+.study-item-row, .study-item-editor { display: flex; align-items: center; gap: 6px; }
+.study-item-row select { flex: 1; }
+.study-icon-btn {
+  width: 40px; height: 40px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-panel); border: 1px solid var(--border-light);
+  border-radius: 8px; color: var(--text-muted); padding: 0;
+}
+.study-icon-btn:hover { color: var(--amber); border-color: #E8A33D55; }
+.study-icon-btn.danger:hover { color: #F87171; border-color: #F8717155; }
+.study-item-editor input[type="text"] { flex: 1; }
+.study-save-btn {
+  height: 40px; padding: 0 14px; flex-shrink: 0;
+  background: var(--amber); color: var(--bg);
+  border: none; border-radius: 8px; font-size: 12.5px; font-weight: 600;
+}

@@ -42,6 +42,8 @@
         goals: parsed.goals || {},
         reflections: parsed.reflections || {},
         study: parsed.study || {},
+        studyItems: parsed.studyItems || [],
+        studyItemsMigrated: !!parsed.studyItemsMigrated,
         mandala: { ...emptyMandala(), ...(parsed.mandala || {}) },
       };
     } catch (e) {
@@ -66,6 +68,13 @@
   }
 
   let state = loadState();
+  {
+    const needsMigrationSave = !state.studyItemsMigrated;
+    deriveStudyItems(state);
+    if (needsMigrationSave) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+    }
+  }
 
   // ---------- optional cloud sync (Firebase Realtime Database) ----------
   // Fill these in with your own free Firebase project's config to sync data
@@ -138,8 +147,11 @@
               goals: remote.goals || {},
               reflections: remote.reflections || {},
               study: remote.study || {},
+              studyItems: remote.studyItems || [],
+              studyItemsMigrated: !!remote.studyItemsMigrated,
               mandala: { ...emptyMandala(), ...(remote.mandala || {}) },
             };
+            deriveStudyItems(state);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
           } else if (firstLoad) {
             // nothing in the cloud yet — seed it with whatever's stored on this device
@@ -161,6 +173,7 @@
   let lastToday = todayStr();
   let selectedCell = { type: "main" };
   let editingHabitId = null;
+  let studyEditorMode = null; // null | "add" | "edit"
   const now0 = new Date();
   let calYear = now0.getFullYear();
   let calMonth = now0.getMonth(); // 0-indexed
@@ -329,6 +342,58 @@
     state.study[dateKey] = getStudy(dateKey).filter((it) => it.id !== id);
     saveState();
   }
+  // study items (the pull-down choices). Sessions keep the item's name in `label`.
+  function deriveStudyItems(st) {
+    if (st.studyItemsMigrated) {
+      if (!st.studyItems) st.studyItems = [];
+      return;
+    }
+    // first run with this feature: build the list from labels already used in past sessions
+    const seen = {};
+    const list = [];
+    Object.keys(st.study || {}).forEach((d) => {
+      (st.study[d] || []).forEach((it) => {
+        if (it && it.label && !seen[it.label]) {
+          seen[it.label] = true;
+          list.push({ id: uid(), name: it.label });
+        }
+      });
+    });
+    st.studyItems = list;
+    st.studyItemsMigrated = true;
+  }
+  function getStudyItems() { return state.studyItems || []; }
+  function addStudyItem(name) {
+    const n = name.trim();
+    if (!n) return { error: "項目名を入力してください" };
+    if (getStudyItems().some((it) => it.name === n)) return { error: "同じ名前の項目がすでにあります" };
+    const id = uid();
+    state.studyItems = [...getStudyItems(), { id, name: n }];
+    saveState();
+    return { id };
+  }
+  function renameStudyItem(id, name) {
+    const n = name.trim();
+    const cur = getStudyItems().find((it) => it.id === id);
+    if (!cur) return { error: "項目が見つかりません" };
+    if (!n) return { error: "項目名を入力してください" };
+    if (n !== cur.name && getStudyItems().some((it) => it.name === n)) return { error: "同じ名前の項目がすでにあります" };
+    const old = cur.name;
+    state.studyItems = getStudyItems().map((it) => (it.id === id ? { ...it, name: n } : it));
+    if (n !== old) {
+      // keep past records attached to the renamed item
+      Object.keys(state.study || {}).forEach((d) => {
+        state.study[d] = getStudy(d).map((x) => (x.label === old ? { ...x, label: n } : x));
+      });
+    }
+    saveState();
+    return { id };
+  }
+  function removeStudyItem(id) {
+    state.studyItems = getStudyItems().filter((it) => it.id !== id);
+    saveState();
+  }
+
   function renderStudy() {
     const today = todayStr();
     const items = [...getStudy(viewDate)].sort((a, b) => (timeToMin(a.start) || 0) - (timeToMin(b.start) || 0));
@@ -390,11 +455,14 @@
       btn.onclick = () => { removeStudy(viewDate, btn.dataset.studyRemove); renderStudy(); };
     });
 
-    // suggestions: every label used on any day
-    const seen = {};
-    Object.keys(state.study || {}).forEach((d) => getStudy(d).forEach((it) => { seen[it.label] = true; }));
-    document.getElementById("study-label-options").innerHTML = Object.keys(seen)
-      .map((l) => `<option value="${escapeHtml(l)}"></option>`).join("");
+    // item pull-down (keeps the current choice across re-renders)
+    const sel = document.getElementById("study-item-select");
+    const prev = sel.value;
+    const itemList = getStudyItems();
+    sel.innerHTML = `<option value="">${itemList.length ? "項目を選択" : "＋で項目を追加"}</option>` +
+      itemList.map((it) => `<option value="${escapeHtml(it.id)}">${escapeHtml(it.name)}</option>`).join("");
+    if (prev && itemList.some((it) => it.id === prev)) sel.value = prev;
+    document.getElementById("study-item-editor").style.display = studyEditorMode ? "flex" : "none";
   }
 
   function autoGrow(el) {
@@ -821,31 +889,77 @@
     const minOpts = Array.from({ length: 12 }, (_, i) => `<option value="${pad(i * 5)}">${pad(i * 5)}</option>`).join("");
     ["study-start-h", "study-end-h"].forEach((id) => { document.getElementById(id).innerHTML = hourOpts; });
     ["study-start-m", "study-end-m"].forEach((id) => { document.getElementById(id).innerHTML = minOpts; });
-    const studyNameInput = document.getElementById("study-name-input");
+    const itemSel = document.getElementById("study-item-select");
+    const itemNameInput = document.getElementById("study-item-name");
     const studyMsg = document.getElementById("study-msg");
+    const selectedItem = () => getStudyItems().find((it) => it.id === itemSel.value);
+
+    const openItemEditor = (mode) => {
+      studyMsg.textContent = "";
+      if (mode === "edit") {
+        const cur = selectedItem();
+        if (!cur) { studyMsg.textContent = "名前を変える項目を選んでください"; return; }
+        itemNameInput.value = cur.name;
+      } else {
+        itemNameInput.value = "";
+      }
+      studyEditorMode = mode;
+      renderStudy();
+      itemNameInput.focus();
+    };
+    const closeItemEditor = () => {
+      studyEditorMode = null;
+      itemNameInput.value = "";
+      renderStudy();
+    };
+    const saveItemEditor = () => {
+      const res = studyEditorMode === "edit"
+        ? renameStudyItem(itemSel.value, itemNameInput.value)
+        : addStudyItem(itemNameInput.value);
+      if (res.error) { studyMsg.textContent = res.error; return; }
+      studyMsg.textContent = "";
+      studyEditorMode = null;
+      itemNameInput.value = "";
+      renderStudy();
+      itemSel.value = res.id;
+    };
+    document.getElementById("study-item-add").addEventListener("click", () => openItemEditor("add"));
+    document.getElementById("study-item-edit").addEventListener("click", () => openItemEditor("edit"));
+    document.getElementById("study-item-save").addEventListener("click", saveItemEditor);
+    document.getElementById("study-item-cancel").addEventListener("click", closeItemEditor);
+    itemNameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.shiftKey) { e.preventDefault(); saveItemEditor(); }
+      if (e.key === "Escape") closeItemEditor();
+    });
+    document.getElementById("study-item-del").addEventListener("click", () => {
+      const cur = selectedItem();
+      if (!cur) { studyMsg.textContent = "削除する項目を選んでください"; return; }
+      if (!window.confirm(`「${cur.name}」を消しますか？\n（これまでの学習記録は残ります）`)) return;
+      removeStudyItem(cur.id);
+      studyMsg.textContent = "";
+      studyEditorMode = null;
+      renderStudy();
+    });
+
     const readStudyTime = (prefix) => {
       const h = document.getElementById(`study-${prefix}-h`).value;
       const m = document.getElementById(`study-${prefix}-m`).value;
       return h === "" ? "" : `${h}:${m}`;
     };
-    const submitStudy = () => {
-      const ok = addStudy(viewDate, studyNameInput.value, readStudyTime("start"), readStudyTime("end"));
-      if (!ok) {
+    document.getElementById("add-study-btn").addEventListener("click", () => {
+      const cur = selectedItem();
+      if (!cur) {
+        studyMsg.textContent = getStudyItems().length ? "項目を選んでください" : "まず「＋」で項目を追加してください";
+        return;
+      }
+      if (!addStudy(viewDate, cur.name, readStudyTime("start"), readStudyTime("end"))) {
         studyMsg.textContent = "開始と終了の時刻を選んでください（同じ時刻にはできません）";
         return;
       }
       studyMsg.textContent = "";
-      studyNameInput.value = "";
       ["study-start-h", "study-end-h"].forEach((id) => { document.getElementById(id).value = ""; });
       ["study-start-m", "study-end-m"].forEach((id) => { document.getElementById(id).value = "00"; });
       renderStudy();
-    };
-    document.getElementById("add-study-btn").addEventListener("click", submitStudy);
-    studyNameInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && e.shiftKey) {
-        e.preventDefault();
-        submitStudy();
-      }
     });
 
     document.getElementById("reflection-text").addEventListener("input", (e) => {
